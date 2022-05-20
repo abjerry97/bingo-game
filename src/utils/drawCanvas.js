@@ -61,7 +61,8 @@ function DrawCanvas(props) {
 
    setTimeout(() => {
       canvas.width = 0;
-      canvas.height = 0; props.setWinner(false)
+      canvas.height = 0;
+       props.setWinner(false)
     }, 1000);}
   }, [props.winner]);
 

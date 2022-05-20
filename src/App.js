@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from "react";
-import { Card } from "react-bootstrap";
+import { useEffect, useState } from "react";
 import { bingo } from "./data";
-import DrawCanvas, { animate } from "./utils/drawCanvas";
+import DrawCanvas from "./utils/drawCanvas";
 function App() {
   const [winner, setWinner] = useState(false);
   const [bingoColumn, setbingoColumn] = useState(bingo || []);
   const [activeCard, setActiveCard] = useState(null);
   const [boardClickEvent, setboardClickEvent] = useState(false);
+  const [winArray, setwinArray] = useState([]);
   const chunkSize = 5;
   const eachBingoMap = {};
   bingoColumn.forEach(({ id }, index) => {
@@ -22,18 +22,27 @@ function App() {
   function chkDiagonal(bingoColumnMap) {
     const tempDiagonal = [];
     for (let j = 0; j < bingoColumnMap.length; j++) {
-      if (j <= bingoColumnMap.length && bingoColumnMap[j][j].status !== 1) {
+      if (j <= bingoColumnMap.length && bingoColumnMap[j][j].status !== 1 ) {
         return false;
       }
       tempDiagonal.push(bingoColumnMap[j][j].id);
     }
 
-    tempDiagonal.forEach((curentTempBingo) => {
-      bingoColumn[eachBingoMap[curentTempBingo]].win = true;
-    });
-    setbingoColumn([...bingoColumn]);
+ 
 
-    setWinner(true);
+    const containsAll = tempDiagonal.every(element => {
+      return winArray.includes(element);
+    });
+
+    if(!containsAll){
+      tempDiagonal.forEach((curentTempBingo) => {
+        bingoColumn[eachBingoMap[curentTempBingo]].win = true;
+      });
+      setbingoColumn([...bingoColumn]);
+      setwinArray([...winArray,...tempDiagonal])
+      setWinner(true);
+    }
+
   }
 
   function chkLeftDiagonal(bingoColumnMap) {
@@ -49,14 +58,19 @@ function App() {
       tempDiagonal.push(bingoColumnMap[j][i].id);
     }
 
-    tempDiagonal.forEach((curentTempBingo) => {
-      bingoColumn[eachBingoMap[curentTempBingo]].win = true;
+    const containsAll = tempDiagonal.every(element => {
+      return winArray.includes(element);
     });
-    setbingoColumn([...bingoColumn]);
 
-    setWinner(true);
+    if(!containsAll){
+      tempDiagonal.forEach((curentTempBingo) => {
+        bingoColumn[eachBingoMap[curentTempBingo]].win = true;
+      });
+      setbingoColumn([...bingoColumn]);
+      setwinArray([...winArray,...tempDiagonal])
+      setWinner(true);
+    }
   }
-
   function chkHorizontal(bingoColumnMap) {
     let tempHorizontal = [];
     for (let i = 0; i < bingoColumnMap.length; i++) {
@@ -72,11 +86,18 @@ function App() {
         tempHorizontal = [...tempHorizontal, ...temp];
       }
 
-      tempHorizontal.forEach((curentTempBingo) => {
-        bingoColumn[eachBingoMap[curentTempBingo]].win = true;
-        setWinner(true);
+      const containsAll = tempHorizontal.every(element => {
+        return winArray.includes(element);
       });
-      setbingoColumn([...bingoColumn]);
+  
+      if(!containsAll){
+        tempHorizontal.forEach((curentTempBingo) => {
+          bingoColumn[eachBingoMap[curentTempBingo]].win = true;
+        });
+        setbingoColumn([...bingoColumn]);
+        setwinArray([...winArray,...tempHorizontal])
+        setWinner(true);
+      }
     }
   }
   function chkVertical(bingoColumnMap) {
@@ -93,12 +114,18 @@ function App() {
       if (temp.length === 5) {
         tempVertical = [...tempVertical, ...temp];
       }
-
-      tempVertical.forEach((curentTempBingo) => {
-        bingoColumn[eachBingoMap[curentTempBingo]].win = true;
-        setWinner(true);
+      const containsAll = tempVertical.every(element => {
+        return winArray.includes(element);
       });
-      setbingoColumn([...bingoColumn]);
+  
+      if(!containsAll){
+        tempVertical.forEach((curentTempBingo) => {
+          bingoColumn[eachBingoMap[curentTempBingo]].win = true;
+        });
+        setbingoColumn([...bingoColumn]);
+        setwinArray([...winArray,...tempVertical])
+        setWinner(true);
+      }
     }
   }
   useEffect(() => {
@@ -140,7 +167,8 @@ function App() {
     chkLeftDiagonal(bingoColumnMap);
   }, [activeCard, boardClickEvent]);
 
-  console.log(winner)
+  console.log(winArray)
+  // console.log()
 
   return (
     <div className="bgdds vh-100 d-flex justify-content-center">
@@ -197,7 +225,7 @@ function App() {
             })}
         </div>
       </div>
-      {winner ? <DrawCanvas  winner= {winner}/> : null}
+      {winner ? <DrawCanvas  winner= {winner} setWinner={setWinner} bingoColumn={bingoColumn}/> : null}
     </div>
   );
 }

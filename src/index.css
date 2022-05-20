@@ -95,7 +95,7 @@ code {
   .table-wrapper {
 
     grid-template-columns: repeat(5, 5.9rem);
-    grid-auto-rows: 5.9rem;
+    grid-auto-rows: 6.1rem;
 
   }
 
@@ -108,8 +108,8 @@ code {
 
   .table-wrapper {
 
-    grid-template-columns: repeat(5, 5.3rem);
-    grid-auto-rows: 5rem;
+    grid-template-columns: repeat(5, 5.0rem);
+    grid-auto-rows: 5.3rem;
 
   }
 
@@ -118,13 +118,13 @@ code {
   }
 }
 
-@media only screen and (max-width: 390px) {
+@media only screen and (max-width: 420px) {
 
   .table-wrapper {
 
     display: grid;
-    grid-template-columns: repeat(5, 3.9rem);
-    grid-auto-rows: 5rem;
+    grid-template-columns: repeat(5, 4.0rem);
+    grid-auto-rows: 5.3rem;
     overflow: auto;
     margin: 0 !important;
 
