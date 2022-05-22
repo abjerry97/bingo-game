@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Card } from "react-bootstrap";
 import { bingo } from "./data";
-import DrawCanvas from "./utils/drawCanvas";
+import DrawCanvas, { animate } from "./utils/drawCanvas";
 function App() {
   const [winner, setWinner] = useState(false);
   const [bingoColumn, setbingoColumn] = useState(bingo || []);
   const [activeCard, setActiveCard] = useState(null);
-  const [boardClickEvent, setboardClickEvent] = useState(false);
+  const [activeCardPosition, setActiveCardPosition] = useState({});
   const [winArray, setwinArray] = useState([]);
+  const [boardClickEventType, setboardClickEventType] = useState(0);
   const chunkSize = 5;
   const eachBingoMap = {};
   bingoColumn.forEach(({ id }, index) => {
@@ -20,156 +22,331 @@ function App() {
   }
 
   function chkDiagonal(bingoColumnMap) {
-    const tempDiagonal = [];
+    let tempDiagonal = [];
+    let isWin = true;
     for (let j = 0; j < bingoColumnMap.length; j++) {
-      if (j <= bingoColumnMap.length && bingoColumnMap[j][j].status !== 1 ) {
-        return false;
+      if (j <= bingoColumnMap.length && bingoColumnMap[j][j].status !== 1) {
+        isWin = false;
+        break;
       }
       tempDiagonal.push(bingoColumnMap[j][j].id);
     }
-
- 
-
-    const containsAll = tempDiagonal.every(element => {
-      return winArray.includes(element);
-    });
-
-    if(!containsAll){
+    if (isWin) {
       tempDiagonal.forEach((curentTempBingo) => {
         bingoColumn[eachBingoMap[curentTempBingo]].win = true;
+        bingoColumn[eachBingoMap[curentTempBingo]].diagonalWin = true;
       });
-      setbingoColumn([...bingoColumn]);
-      setwinArray([...winArray,...tempDiagonal])
-      setWinner(true);
-    }
 
+      if (tempDiagonal.length === 5) {
+        const containsAll = tempDiagonal.every((element) => {
+          return winArray.includes(element);
+        });
+        if (!containsAll) {
+          setwinArray([...winArray, ...tempDiagonal]);
+
+          setWinner(true);
+        }
+      }
+
+      setbingoColumn([...bingoColumn]);
+    }
+  }
+
+  function unChkDiagonal(bingoColumnMap) {
+    let tempDiagonal = [];
+    let isWin = true;
+    for (let j = 0; j < bingoColumnMap.length; j++) {
+      if (bingoColumnMap[j][j].status !== 1) {
+        isWin = false;
+      }
+      if (
+        !bingoColumnMap[j][j].verticalWin &&
+        !bingoColumnMap[j][j].horizontalWin &&
+        !bingoColumnMap[j][j].leftDiagonalWin
+      ) {
+        tempDiagonal.push(bingoColumnMap[j][j].id);
+      }
+    }
+    if (!isWin) {
+      tempDiagonal.forEach((curentTempBingo) => {
+        bingoColumn[eachBingoMap[curentTempBingo]].win = false;
+        bingoColumn[eachBingoMap[curentTempBingo]].diagonalWin = false;
+      });
+
+      const updateWinArray = tempDiagonal.every((element) => {
+        return winArray.filter((current) => current !== element);
+      });
+      if (Array.isArray(updateWinArray)) {
+        setwinArray(updateWinArray);
+      }
+
+      setbingoColumn([...bingoColumn]);
+    }
   }
 
   function chkLeftDiagonal(bingoColumnMap) {
-    const tempDiagonal = [];
+    let tempDiagonal = [];
+    let isWin = true;
     for (
       let j = 0, i = bingoColumnMap.length - 1;
       j < bingoColumnMap.length;
       j++, i--
     ) {
       if (j <= bingoColumnMap.length && bingoColumnMap[j][i].status !== 1) {
-        return false;
+        isWin = false;
+        break;
       }
       tempDiagonal.push(bingoColumnMap[j][i].id);
     }
-
-    const containsAll = tempDiagonal.every(element => {
-      return winArray.includes(element);
-    });
-
-    if(!containsAll){
+    if (isWin) {
       tempDiagonal.forEach((curentTempBingo) => {
         bingoColumn[eachBingoMap[curentTempBingo]].win = true;
+        bingoColumn[eachBingoMap[curentTempBingo]].leftDiagonalWin = true;
       });
+
+      if (tempDiagonal.length === 5) {
+        const containsAll = tempDiagonal.every((element) => {
+          return winArray.includes(element);
+        });
+        if (!containsAll) {
+          setwinArray([...winArray, ...tempDiagonal]);
+
+          setWinner(true);
+        }
+      }
+    }
+    setbingoColumn([...bingoColumn]);
+  }
+
+  function unChkLeftDiagonal(bingoColumnMap) {
+    let tempDiagonal = [];
+    let isWin = true;
+    for (
+      let j = 0, i = bingoColumnMap.length - 1;
+      j < bingoColumnMap.length;
+      j++, i--
+    ) {
+      if (bingoColumnMap[j][i].status !== 1) {
+        isWin = false;
+      }
+      if (
+        !bingoColumnMap[j][i].verticalWin &&
+        !bingoColumnMap[j][i].horizontalWin &&
+        !bingoColumnMap[j][i].diagonalWin
+      ) {
+        tempDiagonal.push(bingoColumnMap[j][i].id);
+      }
+    }
+
+    if (!isWin) {
+      tempDiagonal.forEach((curentTempBingo) => {
+        bingoColumn[eachBingoMap[curentTempBingo]].win = false;
+        bingoColumn[eachBingoMap[curentTempBingo]].leftDiagonalWin = false;
+      });
+
+      const updateWinArray = tempDiagonal.every((element) => {
+        return winArray.filter((current) => current !== element);
+      });
+      if (Array.isArray(updateWinArray)) {
+        setwinArray(updateWinArray);
+      }
+
       setbingoColumn([...bingoColumn]);
-      setwinArray([...winArray,...tempDiagonal])
-      setWinner(true);
     }
   }
+
   function chkHorizontal(bingoColumnMap) {
-    let tempHorizontal = [];
     for (let i = 0; i < bingoColumnMap.length; i++) {
+      let isWin = true;
       let temp = [];
       for (let j = 0; j < bingoColumnMap.length; j++) {
         if (bingoColumnMap[i][j].status !== 1) {
-          temp = [];
+          isWin = false;
           break;
         }
         temp.push(bingoColumnMap[i][j].id);
       }
-      if (temp.length === 5) {
-        tempHorizontal = [...tempHorizontal, ...temp];
-      }
 
-      const containsAll = tempHorizontal.every(element => {
-        return winArray.includes(element);
-      });
-  
-      if(!containsAll){
-        tempHorizontal.forEach((curentTempBingo) => {
+      if (isWin) {
+        temp.forEach((curentTempBingo) => {
           bingoColumn[eachBingoMap[curentTempBingo]].win = true;
+          bingoColumn[eachBingoMap[curentTempBingo]].horizontalWin = true;
         });
-        setbingoColumn([...bingoColumn]);
-        setwinArray([...winArray,...tempHorizontal])
-        setWinner(true);
+
+        if (temp.length === 5) {
+          const containsAll = temp.every((element) => {
+            return winArray.includes(element);
+          });
+          if (!containsAll) {
+            setwinArray([...winArray, ...temp]);
+
+            setWinner(true);
+          }
+        }
       }
     }
+
+    setbingoColumn([...bingoColumn]);
   }
+
+
+  function unChkHorizontal(bingoColumnMap,rowToUncheck) {
+   
+      let isWin = true;
+      let temp = [];
+      for (let j = 0; j < bingoColumnMap[rowToUncheck].length; j++) {
+        if (bingoColumnMap[rowToUncheck][j].status !== 1) {
+          isWin = false;
+        }
+        if (
+          !bingoColumnMap[rowToUncheck][j].verticalWin &&
+          !bingoColumnMap[rowToUncheck][j].diagonalWin &&
+          !bingoColumnMap[rowToUncheck][j].leftDiagonalWin
+        ) {
+          temp.push(bingoColumnMap[rowToUncheck][j].id);
+        }
+      }
+
+      if (!isWin) {
+        temp.forEach((curentTempBingo) => {
+          bingoColumn[eachBingoMap[curentTempBingo]].win = false;
+          bingoColumn[eachBingoMap[curentTempBingo]].horizontalWin = false;
+        });
+  
+        const updateWinArray = temp.every((element) => {
+          return winArray.filter((current) => current !== element);
+        });
+        if (Array.isArray(updateWinArray)) {
+          setwinArray(updateWinArray);
+        }
+  
+        setbingoColumn([...bingoColumn]);
+      }
+  }
+
+
   function chkVertical(bingoColumnMap) {
-    let tempVertical = [];
     for (let i = 0; i < bingoColumnMap.length; i++) {
+      let isWin = true;
       let temp = [];
       for (let j = 0; j < bingoColumnMap.length; j++) {
         if (bingoColumnMap[j][i].status !== 1) {
-          temp = [];
+          isWin = false;
           break;
         }
         temp.push(bingoColumnMap[j][i].id);
       }
-      if (temp.length === 5) {
-        tempVertical = [...tempVertical, ...temp];
-      }
-      const containsAll = tempVertical.every(element => {
-        return winArray.includes(element);
-      });
-  
-      if(!containsAll){
-        tempVertical.forEach((curentTempBingo) => {
+
+      if (isWin) {
+        temp.forEach((curentTempBingo) => {
           bingoColumn[eachBingoMap[curentTempBingo]].win = true;
+          bingoColumn[eachBingoMap[curentTempBingo]].verticalWin = true;
         });
-        setbingoColumn([...bingoColumn]);
-        setwinArray([...winArray,...tempVertical])
-        setWinner(true);
+
+        if (temp.length === 5) {
+          const containsAll = temp.every((element) => {
+            return winArray.includes(element);
+          });
+          if (!containsAll) {
+            setwinArray([...winArray, ...temp]);
+
+            setWinner(true);
+          }
+        }
       }
     }
+
+    setbingoColumn([...bingoColumn]);
   }
+
+
+  function unChkVertical(bingoColumnMap,columnToUncheck) {
+   
+    let isWin = true;
+    let temp = [];
+    for (let j = 0; j < bingoColumnMap.length; j++) {
+      if (bingoColumnMap[j][columnToUncheck].status !== 1) {
+        isWin = false;
+      }
+      if (
+        !bingoColumnMap[j][columnToUncheck].horizontalWin &&
+        !bingoColumnMap[j][columnToUncheck].diagonalWin &&
+        !bingoColumnMap[j][columnToUncheck].leftDiagonalWin
+      ) {
+        temp.push(bingoColumnMap[j][columnToUncheck].id);
+      }
+    }
+
+    if (!isWin) {
+      temp.forEach((curentTempBingo) => {
+        bingoColumn[eachBingoMap[curentTempBingo]].win = false;
+        bingoColumn[eachBingoMap[curentTempBingo]].verticalWin = false;
+      });
+
+      const updateWinArray = temp.every((element) => {
+        return winArray.filter((current) => current !== element);
+      });
+      if (Array.isArray(updateWinArray)) {
+        setwinArray(updateWinArray);
+      }
+
+      setbingoColumn([...bingoColumn]);
+    }
+}
   useEffect(() => {
-    if (activeCard !== null) {
+    const { i = 0, j = 0 } = activeCardPosition;
+    if (Number(boardClickEventType) > 0) {
       setbingoColumn(
-        bingoColumn.map((curentBingo) => {
-          if (String(curentBingo.id) === "12") {
-            curentBingo.status = 1;
+        bingoColumn.map((currentBingo) => {
+          if (String(currentBingo.id) === "12") {
+            currentBingo.status = 1;
           }
           if (
-            String(curentBingo.id) === String(activeCard) &&
-            curentBingo.status == 1 &&
-            curentBingo.win &&
-            String(curentBingo.id) !== "12"
+            String(currentBingo.id) === String(activeCard) &&
+            String(currentBingo.id) !== "12"
           ) {
-            curentBingo.status = 0;
-            curentBingo.win = false;
-          } else if (
-            String(curentBingo.id) === String(activeCard) &&
-            curentBingo.status == 1 &&
-            String(curentBingo.id) !== "12"
-          ) {
-            curentBingo.status = 0;
-            curentBingo.win = false;
-          } else if (
-            String(curentBingo.id) === String(activeCard) &&
-            String(curentBingo.id) !== "12"
-          ) {
-            curentBingo.status = 1;
+            currentBingo.status = 1;
           }
-          return curentBingo;
+          return currentBingo;
         })
       );
-    }
 
-    chkDiagonal(bingoColumnMap);
-    chkHorizontal(bingoColumnMap);
-    chkVertical(bingoColumnMap);
-    chkLeftDiagonal(bingoColumnMap);
-  }, [activeCard, boardClickEvent]);
+      if (i + j === 4) {
+        chkLeftDiagonal(bingoColumnMap);
+      } else if (i === j) {
+        chkDiagonal(bingoColumnMap);
+      }
 
-  console.log(winArray)
-  // console.log()
+      chkHorizontal(bingoColumnMap);
+      chkVertical(bingoColumnMap);
+    } else if (Number(boardClickEventType < 0)) {
+      setbingoColumn(
+        bingoColumn.map((currentBingo) => {
+          if (String(currentBingo.id) === "12") {
+            currentBingo.status = 1;
+          }
+          if (
+            String(currentBingo.id) === String(activeCard) &&
+            currentBingo.status == 1 &&
+            String(currentBingo.id) !== "12"
+          ) {
+            currentBingo.status = 0;
+            currentBingo.win = false;
+          }
+          return currentBingo;
+        })
+      );
+      if (i + j === 4) {
+        unChkLeftDiagonal(bingoColumnMap);
+      } else if (i === j) {
+        unChkDiagonal(bingoColumnMap);
+      }
+      unChkHorizontal(bingoColumnMap,i)
+      
+      unChkVertical(bingoColumnMap,j)
 
+       }
+  }, [activeCard, boardClickEventType]);
   return (
     <div className="bgdds vh-100 d-flex justify-content-center">
       <div className="shadow-sm overflow-hidden rounded-lg text-white yellow-border board-wrapper m-auto mt-5">
@@ -189,8 +366,14 @@ function App() {
                           key={columnIndex}
                           id={`card-${currentColumn.id}`}
                           onClick={() => {
-                            setboardClickEvent(!boardClickEvent);
+                            setboardClickEventType(
+                              Number(currentColumn.status) == 1 ? -1 : 1
+                            );
                             setActiveCard(currentColumn.id);
+                            activeCardPosition.i = index;
+                            activeCardPosition.j = columnIndex;
+
+                            setActiveCardPosition(activeCardPosition);
                           }}
                           className={`p-0 mb-2 ${
                             !!bingoColumn[eachBingoMap[currentColumn.id]]
@@ -225,7 +408,7 @@ function App() {
             })}
         </div>
       </div>
-      {winner ? <DrawCanvas  winner= {winner} setWinner={setWinner} bingoColumn={bingoColumn}/> : null}
+      {winner ? <DrawCanvas winner={winner} setWinner={setWinner} /> : null}
     </div>
   );
 }
