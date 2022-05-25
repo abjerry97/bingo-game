@@ -1,4 +1,4 @@
-module.exports = (props) => {
+const tools = (props) => {
   return {
     checkWin: (isWin,tempDiagonal,rowToUpdate) => {
       if (isWin) {
@@ -90,3 +90,6 @@ module.exports = (props) => {
 
   };
 };
+
+
+export default tools;
