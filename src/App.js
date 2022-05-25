@@ -1,57 +1,52 @@
-import { useEffect, useRef, useState } from "react";
-import { Card } from "react-bootstrap";
+import { useEffect, useState } from "react";
 import { bingo } from "./data";
-import DrawCanvas, { animate } from "./utils/drawCanvas";
+import DrawCanvas from "./utils/drawCanvas";
+import {  shuffle ,chkDiagonal,chkLeftDiagonal,chkHorizontal} from "./utils/helpers";
+import tools from "./utils/tools";
 function App() {
   const [winner, setWinner] = useState(false);
-  const [bingoColumn, setbingoColumn] = useState(bingo || []);
+  const [bingoColumn, setbingoColumn] = useState([]);
   const [activeCard, setActiveCard] = useState(null);
+  const [bingoWinCount, setbingoWinCount] = useState(0);
   const [activeCardPosition, setActiveCardPosition] = useState({});
   const [winArray, setwinArray] = useState([]);
   const [boardClickEventType, setboardClickEventType] = useState(0);
   const chunkSize = 5;
+  let bingoColumnMap = [];
   const eachBingoMap = {};
+
+  const allProps = {
+    bingoColumn,
+    setbingoColumn,
+    winner,
+    setWinner,
+    activeCard,
+    setActiveCard,
+    bingoWinCount,
+    setbingoWinCount,
+    activeCardPosition,
+    setActiveCardPosition,
+    winArray,
+    setwinArray,
+    boardClickEventType,
+    setboardClickEventType,
+    bingoColumnMap,
+    eachBingoMap,
+  };
+ let tool=  tools(allProps)
+  useEffect(() => {
+    setbingoColumn(shuffle(bingo || []));
+  }, []);
   bingoColumn.forEach(({ id }, index) => {
     eachBingoMap[id] = index;
   });
-  let bingoColumnMap = [];
 
   for (let i = 0; i < bingoColumn.length; i += chunkSize) {
     const chunk = bingoColumn.slice(i, i + chunkSize);
     bingoColumnMap.push(chunk);
   }
-
-  function chkDiagonal(bingoColumnMap) {
-    let tempDiagonal = [];
-    let isWin = true;
-    for (let j = 0; j < bingoColumnMap.length; j++) {
-      if (j <= bingoColumnMap.length && bingoColumnMap[j][j].status !== 1) {
-        isWin = false;
-        break;
-      }
-      tempDiagonal.push(bingoColumnMap[j][j].id);
-    }
-    if (isWin) {
-      tempDiagonal.forEach((curentTempBingo) => {
-        bingoColumn[eachBingoMap[curentTempBingo]].win = true;
-        bingoColumn[eachBingoMap[curentTempBingo]].diagonalWin = true;
-      });
-
-      if (tempDiagonal.length === 5) {
-        const containsAll = tempDiagonal.every((element) => {
-          return winArray.includes(element);
-        });
-        if (!containsAll) {
-          setwinArray([...winArray, ...tempDiagonal]);
-
-          setWinner(true);
-        }
-      }
-
-      setbingoColumn([...bingoColumn]);
-    }
-  }
-
+  
+ 
   function unChkDiagonal(bingoColumnMap) {
     let tempDiagonal = [];
     let isWin = true;
@@ -83,40 +78,40 @@ function App() {
       setbingoColumn([...bingoColumn]);
     }
   }
-
-  function chkLeftDiagonal(bingoColumnMap) {
-    let tempDiagonal = [];
-    let isWin = true;
-    for (
-      let j = 0, i = bingoColumnMap.length - 1;
-      j < bingoColumnMap.length;
-      j++, i--
-    ) {
-      if (j <= bingoColumnMap.length && bingoColumnMap[j][i].status !== 1) {
-        isWin = false;
-        break;
+  function chkVertical(bingoColumnMap) {
+    for (let i = 0; i < bingoColumnMap.length; i++) {
+      let isWin = true;
+      let temp = [];
+      for (let j = 0; j < bingoColumnMap.length; j++) {
+        if (bingoColumnMap[j][i].status !== 1) {
+          isWin = false;
+          break;
+        }
+        temp.push(bingoColumnMap[j][i].id);
       }
-      tempDiagonal.push(bingoColumnMap[j][i].id);
-    }
-    if (isWin) {
-      tempDiagonal.forEach((curentTempBingo) => {
-        bingoColumn[eachBingoMap[curentTempBingo]].win = true;
-        bingoColumn[eachBingoMap[curentTempBingo]].leftDiagonalWin = true;
-      });
 
-      if (tempDiagonal.length === 5) {
-        const containsAll = tempDiagonal.every((element) => {
-          return winArray.includes(element);
+      if (isWin) {
+        temp.forEach((curentTempBingo) => {
+          bingoColumn[eachBingoMap[curentTempBingo]].win = true;
+          bingoColumn[eachBingoMap[curentTempBingo]].verticalWin = true;
         });
-        if (!containsAll) {
-          setwinArray([...winArray, ...tempDiagonal]);
 
-          setWinner(true);
+        if (temp.length === 5) {
+          const containsAll = temp.every((element) => {
+            return winArray.includes(element);
+          });
+          if (!containsAll) {
+            setwinArray([...winArray, ...temp]);
+            setbingoWinCount(bingoWinCount + 1);
+            setWinner(true);
+          }
         }
       }
     }
+
     setbingoColumn([...bingoColumn]);
   }
+  
 
   function unChkLeftDiagonal(bingoColumnMap) {
     let tempDiagonal = [];
@@ -155,113 +150,44 @@ function App() {
     }
   }
 
-  function chkHorizontal(bingoColumnMap) {
-    for (let i = 0; i < bingoColumnMap.length; i++) {
-      let isWin = true;
-      let temp = [];
-      for (let j = 0; j < bingoColumnMap.length; j++) {
-        if (bingoColumnMap[i][j].status !== 1) {
-          isWin = false;
-          break;
-        }
-        temp.push(bingoColumnMap[i][j].id);
+ 
+
+  function unChkHorizontal(bingoColumnMap, rowToUncheck) {
+    let isWin = true;
+    let temp = [];
+    for (let j = 0; j < bingoColumnMap[rowToUncheck].length; j++) {
+      if (bingoColumnMap[rowToUncheck][j].status !== 1) {
+        isWin = false;
       }
-
-      if (isWin) {
-        temp.forEach((curentTempBingo) => {
-          bingoColumn[eachBingoMap[curentTempBingo]].win = true;
-          bingoColumn[eachBingoMap[curentTempBingo]].horizontalWin = true;
-        });
-
-        if (temp.length === 5) {
-          const containsAll = temp.every((element) => {
-            return winArray.includes(element);
-          });
-          if (!containsAll) {
-            setwinArray([...winArray, ...temp]);
-
-            setWinner(true);
-          }
-        }
+      if (
+        !bingoColumnMap[rowToUncheck][j].verticalWin &&
+        !bingoColumnMap[rowToUncheck][j].diagonalWin &&
+        !bingoColumnMap[rowToUncheck][j].leftDiagonalWin
+      ) {
+        temp.push(bingoColumnMap[rowToUncheck][j].id);
       }
     }
 
-    setbingoColumn([...bingoColumn]);
-  }
+    if (!isWin) {
+      temp.forEach((curentTempBingo) => {
+        bingoColumn[eachBingoMap[curentTempBingo]].win = false;
+        bingoColumn[eachBingoMap[curentTempBingo]].horizontalWin = false;
+      });
 
-
-  function unChkHorizontal(bingoColumnMap,rowToUncheck) {
-   
-      let isWin = true;
-      let temp = [];
-      for (let j = 0; j < bingoColumnMap[rowToUncheck].length; j++) {
-        if (bingoColumnMap[rowToUncheck][j].status !== 1) {
-          isWin = false;
-        }
-        if (
-          !bingoColumnMap[rowToUncheck][j].verticalWin &&
-          !bingoColumnMap[rowToUncheck][j].diagonalWin &&
-          !bingoColumnMap[rowToUncheck][j].leftDiagonalWin
-        ) {
-          temp.push(bingoColumnMap[rowToUncheck][j].id);
-        }
+      const updateWinArray = temp.every((element) => {
+        return winArray.filter((current) => current !== element);
+      });
+      if (Array.isArray(updateWinArray)) {
+        setwinArray(updateWinArray);
       }
 
-      if (!isWin) {
-        temp.forEach((curentTempBingo) => {
-          bingoColumn[eachBingoMap[curentTempBingo]].win = false;
-          bingoColumn[eachBingoMap[curentTempBingo]].horizontalWin = false;
-        });
-  
-        const updateWinArray = temp.every((element) => {
-          return winArray.filter((current) => current !== element);
-        });
-        if (Array.isArray(updateWinArray)) {
-          setwinArray(updateWinArray);
-        }
-  
-        setbingoColumn([...bingoColumn]);
-      }
-  }
-
-
-  function chkVertical(bingoColumnMap) {
-    for (let i = 0; i < bingoColumnMap.length; i++) {
-      let isWin = true;
-      let temp = [];
-      for (let j = 0; j < bingoColumnMap.length; j++) {
-        if (bingoColumnMap[j][i].status !== 1) {
-          isWin = false;
-          break;
-        }
-        temp.push(bingoColumnMap[j][i].id);
-      }
-
-      if (isWin) {
-        temp.forEach((curentTempBingo) => {
-          bingoColumn[eachBingoMap[curentTempBingo]].win = true;
-          bingoColumn[eachBingoMap[curentTempBingo]].verticalWin = true;
-        });
-
-        if (temp.length === 5) {
-          const containsAll = temp.every((element) => {
-            return winArray.includes(element);
-          });
-          if (!containsAll) {
-            setwinArray([...winArray, ...temp]);
-
-            setWinner(true);
-          }
-        }
-      }
+      setbingoColumn([...bingoColumn]);
     }
-
-    setbingoColumn([...bingoColumn]);
   }
 
+  
 
-  function unChkVertical(bingoColumnMap,columnToUncheck) {
-   
+  function unChkVertical(bingoColumnMap, columnToUncheck) {
     let isWin = true;
     let temp = [];
     for (let j = 0; j < bingoColumnMap.length; j++) {
@@ -292,7 +218,7 @@ function App() {
 
       setbingoColumn([...bingoColumn]);
     }
-}
+  }
   useEffect(() => {
     const { i = 0, j = 0 } = activeCardPosition;
     if (Number(boardClickEventType) > 0) {
@@ -312,13 +238,13 @@ function App() {
       );
 
       if (i + j === 4) {
-        chkLeftDiagonal(bingoColumnMap);
+        chkLeftDiagonal(bingoColumnMap,tool);
       } else if (i === j) {
-        chkDiagonal(bingoColumnMap);
+        chkDiagonal(bingoColumnMap,tool)
       }
 
-      chkHorizontal(bingoColumnMap);
-      chkVertical(bingoColumnMap);
+      chkHorizontal(bingoColumnMap,tool);
+      chkVertical(bingoColumnMap,tool);
     } else if (Number(boardClickEventType < 0)) {
       setbingoColumn(
         bingoColumn.map((currentBingo) => {
@@ -341,17 +267,21 @@ function App() {
       } else if (i === j) {
         unChkDiagonal(bingoColumnMap);
       }
-      unChkHorizontal(bingoColumnMap,i)
-      
-      unChkVertical(bingoColumnMap,j)
+      unChkHorizontal(bingoColumnMap, i);
 
-       }
+      unChkVertical(bingoColumnMap, j);
+    }
   }, [activeCard, boardClickEventType]);
   return (
-    <div className="bgdds vh-100 d-flex justify-content-center">
-      <div className="shadow-sm overflow-hidden rounded-lg text-white yellow-border board-wrapper m-auto mt-5">
-        <div className=" bg-red text-center">
-          <h3 className="m-0 p-3">Online Conferencing</h3>
+    <div className="bgdds d-flex justify-content-center">
+      <div className="shadow-sm overflow-hidden rounded-lg text-white yellow-border board-wrapper m-auto mt-5 justify-content-center">
+        <div className=" bg-red text-center d-flex align-items-center justify-content-center position-relative">
+          <h3 className="m-0 p-3">Online Conferencing </h3>
+          <p className=" position-absolute score-text">
+            {" "}
+            score:{" "}
+            <span className=" bg-wne px-1 rounded"> {bingoWinCount} </span>
+          </p>
         </div>
 
         <div className=" bg-wne p-0 p-md-3 ">
@@ -391,9 +321,10 @@ function App() {
                         >
                           <div className=" m-1 mark bg-red p-1  lh-sm shadow-sm rounded overflow-hidden">
                             <div className="inner-border h-100 p-0 px-md-1 py-md-1 fw-bold">
-                              <div className=" text-end">
+                              <div className=" text-end px-1">
                                 {" "}
-                                {currentColumn.id}
+                                {/* {currentColumn.id} */}
+                                {index * 5 + columnIndex}
                               </div>
                               <div className=" overflow-hidden">
                                 {currentColumn.text}

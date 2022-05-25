@@ -27,6 +27,7 @@ code {
 
 .bgdds {
   background-image: linear-gradient(to top, #F6596C 0%, #8C242D 100%);
+  min-height: 100vh;
 }
 
 
@@ -73,6 +74,16 @@ code {
   color: #203040;
   transition: color 2s;
 }
+.score-text {
+  /* top: 0;
+  bottom: 0; */
+  align-self: center;
+  margin: auto;
+  right: 10px;
+}
+p {
+  font-weight: 700;
+}
 
 @media only screen and (max-width: 800px) {
 
@@ -109,12 +120,19 @@ code {
   .table-wrapper {
 
     grid-template-columns: repeat(5, 5.0rem);
-    grid-auto-rows: 5.3rem;
+    grid-auto-rows: 5.9rem;
 
   }
 
   .mark {
     font-size: .63rem;
+  }
+  h3 {
+    font-size: 1.1rem !important;
+  }
+  p {
+    font-size: 0.6rem;
+    font-weight: 700;
   }
 }
 
